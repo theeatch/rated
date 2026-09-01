@@ -1,0 +1,233 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   Design tokens.
+
+   Mirrors lib/colors.ts, which feeds the same values to Recharts (SVG
+   presentation attributes don't resolve var()). Change both together.
+
+   Dark values are declared twice on purpose: the media query follows the OS,
+   the [data-theme] scope follows the in-app toggle, and the toggle must win in
+   both directions.
+--------------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+
+  --surface-1: #fcfcfb;
+  --plane: #f9f9f7;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --border: rgba(11, 11, 11, 0.1);
+
+  --series-allowed: #2a78d6;
+  --series-blocked: #d03b3b;
+
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+
+  --radius: 10px;
+  --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --surface-1: #1a1a19;
+    --plane: #0d0d0d;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --border: rgba(255, 255, 255, 0.1);
+
+    --series-allowed: #3987e5;
+    --series-blocked: #d03b3b;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --surface-1: #1a1a19;
+  --plane: #0d0d0d;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #898781;
+  --border: rgba(255, 255, 255, 0.1);
+
+  --series-allowed: #3987e5;
+  --series-blocked: #d03b3b;
+}
+
+html,
+body {
+  background: var(--plane);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- Building blocks ----------------------------------------------------- */
+@layer components {
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.125rem;
+  }
+
+  .card-title {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: var(--text-primary);
+  }
+
+  .card-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  /* Values, labels and legends wear text tokens — never a series color. */
+  .metric-value {
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 1.1;
+    color: var(--text-primary);
+  }
+
+  .hero-value {
+    font-size: 3.25rem;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex: none;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.1875rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    font-size: 0.6875rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .control {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 0.8125rem;
+    padding: 0.3125rem 0.625rem;
+  }
+
+  .control:focus-visible {
+    outline: 2px solid var(--series-allowed);
+    outline-offset: 1px;
+  }
+
+  .btn {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    padding: 0.375rem 0.75rem;
+    transition: background-color 120ms ease;
+  }
+
+  .btn:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--text-primary) 6%, var(--surface-1));
+  }
+
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .btn-primary {
+    background: var(--series-allowed);
+    border-color: transparent;
+    color: #ffffff;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: color-mix(in oklab, #000 12%, var(--series-allowed));
+  }
+
+  /* Meter: fill carries severity, track is a lighter step of the fill's own
+     ramp so state reads across the whole bar. */
+  .meter-track {
+    background: color-mix(in oklab, var(--meter-fill, var(--series-allowed)) 16%, var(--surface-1));
+    border-radius: 999px;
+    height: 8px;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .meter-fill {
+    background: var(--meter-fill, var(--series-allowed));
+    border-radius: 999px;
+    height: 100%;
+    transition: width 300ms ease;
+  }
+
+  .data-table {
+    font-size: 0.75rem;
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .data-table th {
+    color: var(--text-muted);
+    font-weight: 500;
+    text-align: left;
+    padding: 0.375rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .data-table td {
+    color: var(--text-secondary);
+    padding: 0.375rem 0.5rem;
+    border-bottom: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
+  }
+
+  .data-table tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+/* Recharts leaves a focus ring on the surface wrapper; we drive focus from the
+   controls instead. */
+.recharts-wrapper:focus {
+  outline: none;
+}

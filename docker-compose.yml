@@ -1,0 +1,96 @@
+name: rateflow
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: rateflow-redis
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    # `$$` defers expansion to the container's shell, so auth is enabled only
+    # when REDIS_PASSWORD is non-empty. appendonly keeps bucket state across
+    # restarts; allkeys-lru bounds memory if buckets are never evicted.
+    command: >
+      sh -c 'exec redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+      $${REDIS_PASSWORD:+--requirepass "$$REDIS_PASSWORD"}'
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - redis-cli $${REDIS_PASSWORD:+-a "$$REDIS_PASSWORD"} --no-auth-warning ping | grep -q PONG
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - rateflow
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rateflow-backend
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_KEY_PREFIX: ${REDIS_KEY_PREFIX:-rateflow}
+      DEFAULT_POLICY: ${DEFAULT_POLICY:-default}
+      FAILURE_MODE: ${FAILURE_MODE:-open}
+      BUCKET_TTL_SECONDS: ${BUCKET_TTL_SECONDS:-3600}
+      METRICS_WINDOW_SECONDS: ${METRICS_WINDOW_SECONDS:-120}
+      METRICS_TTL_SECONDS: ${METRICS_TTL_SECONDS:-300}
+      # Placeholder credentials — override in .env before any real deployment.
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-replace-me-admin-token}
+      DASHBOARD_API_KEY: ${DASHBOARD_API_KEY:-replace-me-dashboard-key}
+      REQUIRE_API_KEY: ${REQUIRE_API_KEY:-false}
+    ports:
+      - '${BACKEND_PORT:-4000}:4000'
+    networks:
+      - rateflow
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      # NEXT_PUBLIC_* is baked into the client bundle at build time — change
+      # either value and the frontend image has to be rebuilt.
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:4000}
+        NEXT_PUBLIC_POLL_INTERVAL_MS: ${NEXT_PUBLIC_POLL_INTERVAL_MS:-2000}
+    container_name: rateflow-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: production
+      # Server-to-server call inside the compose network.
+      BACKEND_URL: http://backend:4000
+      DASHBOARD_API_KEY: ${DASHBOARD_API_KEY:-replace-me-dashboard-key}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-replace-me-admin-token}
+      ALLOW_ADMIN_PROXY: ${ALLOW_ADMIN_PROXY:-true}
+      # Browser-to-backend call for the traffic generator, so simulated requests
+      # get real per-client-IP buckets instead of sharing the Next server's.
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:4000}
+      NEXT_PUBLIC_POLL_INTERVAL_MS: ${NEXT_PUBLIC_POLL_INTERVAL_MS:-2000}
+    ports:
+      - '${FRONTEND_PORT:-3000}:3000'
+    networks:
+      - rateflow
+
+volumes:
+  redis-data:
+
+networks:
+  rateflow:
+    driver: bridge
