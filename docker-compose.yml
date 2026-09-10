@@ -45,15 +45,25 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       REDIS_KEY_PREFIX: ${REDIS_KEY_PREFIX:-rateflow}
+      # Compose publishes the port directly, so the container sees the Docker
+      # bridge as the peer and there is no XFF to trust. Behind an edge proxy
+      # (nginx/Caddy/ALB) set this to the hop count instead — never `true`.
+      TRUST_PROXY: ${TRUST_PROXY:-0}
       DEFAULT_POLICY: ${DEFAULT_POLICY:-default}
       FAILURE_MODE: ${FAILURE_MODE:-open}
       BUCKET_TTL_SECONDS: ${BUCKET_TTL_SECONDS:-3600}
+      # Ceilings on runtime policy overrides — an unbounded override would let
+      # anyone who reaches the dashboard switch the limiter off.
+      POLICY_MAX_CAPACITY: ${POLICY_MAX_CAPACITY:-10000}
+      POLICY_MAX_REFILL_RATE: ${POLICY_MAX_REFILL_RATE:-1000}
+      POLICY_MAX_COST: ${POLICY_MAX_COST:-100}
       METRICS_WINDOW_SECONDS: ${METRICS_WINDOW_SECONDS:-120}
       METRICS_TTL_SECONDS: ${METRICS_TTL_SECONDS:-300}
-      # Placeholder credentials — override in .env before any real deployment.
+      # Set these in .env — the fallbacks are placeholders and the backend
+      # logs a config.insecure warning at startup if it sees one.
       ADMIN_TOKEN: ${ADMIN_TOKEN:-replace-me-admin-token}
       DASHBOARD_API_KEY: ${DASHBOARD_API_KEY:-replace-me-dashboard-key}
-      REQUIRE_API_KEY: ${REQUIRE_API_KEY:-false}
+      REQUIRE_API_KEY: ${REQUIRE_API_KEY:-true}
     ports:
       - '${BACKEND_PORT:-4000}:4000'
     networks:

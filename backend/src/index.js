@@ -1,10 +1,12 @@
 import { createApp } from './app.js';
+import { auditConfig } from './config/audit.js';
 import { config } from './config/index.js';
 import { connectRedis, disconnectRedis } from './redis/client.js';
 import { refreshOverrides } from './services/policy.service.js';
 import { logger } from './utils/logger.js';
 
 const start = async () => {
+  auditConfig();
   await connectRedis();
   await refreshOverrides({ force: true });
 

@@ -8,9 +8,10 @@ middleware policies and atomic request tracking, and ships a monitoring UI that
 visualizes request throughput, token utilization, blocked requests, and Redis state in
 real time.
 
-> **Status: skeleton.** Every layer is wired end to end and runs, but all credentials in
-> this repo are placeholders (`replace-me-*`) and the protected endpoints under
-> `/api/demo/*` are stand-ins. Swap in your own routes and secrets.
+> **Status: running, not yet deployed.** Every layer is wired end to end, the security
+> defaults are safe (see [Security](#security)), and the test suite is green. Credentials
+> committed here are placeholders (`replace-me-*`) and the endpoints under `/api/demo/*`
+> are stand-ins for a real API.
 
 ---
 
@@ -26,6 +27,7 @@ real time.
 - [API reference](#api-reference)
 - [The dashboard](#the-dashboard)
 - [Design notes](#design-notes)
+- [Security](#security)
 - [Scaling notes](#scaling-notes)
 - [Testing](#testing)
 - [Next steps](#next-steps)
@@ -186,6 +188,7 @@ repo is a placeholder.**
 | `PORT` | `4000` | HTTP port |
 | `LOG_LEVEL` | `info` | `error` · `warn` · `info` · `debug` |
 | `CORS_ORIGIN` | `http://localhost:3000` | Comma-separated allowed origins |
+| `TRUST_PROXY` | `0` | Where `req.ip` comes from — see [Trust proxy](#trust-proxy) |
 | `REDIS_URL` | — | Full URL; wins over the discrete parts |
 | `REDIS_HOST` / `REDIS_PORT` | `localhost` / `6379` | Used when no URL is set |
 | `REDIS_USERNAME` / `REDIS_PASSWORD` | — | ACL credentials |
@@ -194,11 +197,14 @@ repo is a placeholder.**
 | `DEFAULT_POLICY` | `default` | Policy for routes that don't name one |
 | `FAILURE_MODE` | `open` | Behaviour when Redis is down |
 | `BUCKET_TTL_SECONDS` | `3600` | Idle eviction for a bucket |
+| `POLICY_MAX_CAPACITY` | `10000` | Ceiling on a runtime `capacity` override |
+| `POLICY_MAX_REFILL_RATE` | `1000` | Ceiling on a runtime `refillRate` override |
+| `POLICY_MAX_COST` | `100` | Ceiling on a runtime `cost` override |
 | `METRICS_WINDOW_SECONDS` | `120` | History the dashboard charts |
 | `METRICS_TTL_SECONDS` | `300` | Retention of per-second samples |
 | `ADMIN_TOKEN` | `replace-me-…` | Bearer token for mutating endpoints |
 | `DASHBOARD_API_KEY` | `replace-me-…` | Key for the read-only metrics API |
-| `REQUIRE_API_KEY` | `false` | Enforce the dashboard key |
+| `REQUIRE_API_KEY` | `true` | Enforce the dashboard key |
 
 ### Frontend
 
@@ -369,6 +375,57 @@ eyeballed:
 
 ---
 
+## Security
+
+Three settings decide whether the limiter can be talked out of doing its job. The
+defaults are the safe ones; the backend logs a `config.insecure` warning at startup for
+each that isn't.
+
+### Trust proxy
+
+`TRUST_PROXY` decides where `req.ip` comes from, and `req.ip` is what the limiter
+buckets on. It defaults to `0` — use the socket address.
+
+Setting it to `true` trusts the whole `X-Forwarded-For` chain, and the header is
+client-supplied:
+
+```bash
+curl -H 'X-Forwarded-For: 203.0.113.9'  /api/demo/ping   # fresh bucket
+curl -H 'X-Forwarded-For: 198.51.100.7' /api/demo/ping   # another fresh bucket
+```
+
+A caller who varies that header never exhausts a bucket, so the limiter enforces
+nothing. Set `TRUST_PROXY` to the **number of proxy hops** in front of the API instead
+— `1` behind a single nginx, Caddy or ALB — or to the proxy's address/CIDR. Express
+then counts in from the right of the chain and lands on the address your edge actually
+observed, which a client cannot forge.
+
+Under `docker compose` the port is published directly, so the container sees the Docker
+bridge as its peer and `0` is correct. Behind an edge proxy, it isn't.
+
+### The dashboard is an admin client
+
+`/api/proxy` attaches `ADMIN_TOKEN` to every mutating request, so **anyone who can load
+the dashboard can change policy**. That is the intended behaviour for a demo and the
+wrong behaviour for a private control plane. Two dials:
+
+- `POLICY_MAX_CAPACITY` / `POLICY_MAX_REFILL_RATE` / `POLICY_MAX_COST` cap how far an
+  override can go. Without a ceiling, `capacity: 999999` is an off switch.
+- `ALLOW_ADMIN_PROXY=false` makes the proxy refuse mutations outright, leaving a
+  read-only dashboard.
+
+Put real authentication in front of the Next app before exposing a dashboard that is
+allowed to mutate anything you care about.
+
+### Credentials
+
+`ADMIN_TOKEN` and `DASHBOARD_API_KEY` are compared in constant time against SHA-256
+digests, so neither their contents nor their length leak through response timing.
+Generate them with `openssl rand -base64 32`. Every value committed to this repo is a
+placeholder, and the startup audit says so.
+
+---
+
 ## Scaling notes
 
 - **Redis Cluster.** `token_bucket.lua` touches four keys (bucket, global counters,
@@ -386,9 +443,8 @@ eyeballed:
   apart will disagree about refill. Keep NTP running, or switch to Redis's own `TIME`
   command inside the script (which makes it non-deterministic — fine on Redis ≥ 5, where
   effect replication is the default).
-- **Trust proxy.** `app.set('trust proxy', true)` is on so `req.ip` reflects
-  `X-Forwarded-For`. Behind an untrusted edge, narrow that to your proxy's address —
-  otherwise a client can forge the header and get its own fresh bucket.
+- **Trust proxy.** See [Trust proxy](#trust-proxy) — the setting that decides what the
+  limiter buckets on, and the one most likely to be wrong in a new deployment.
 
 ---
 
@@ -407,8 +463,10 @@ the obvious next addition (see the TODO in `backend/test/tokenBucket.test.js`).
 
 ## Next steps
 
+- [x] Bucket on an identity a client cannot forge (`TRUST_PROXY`)
+- [x] Bound runtime policy overrides so they can't disable the limiter
+- [x] Constant-time credential comparison + a startup audit for unsafe settings
 - [ ] Replace `/api/demo/*` with the real protected routes
-- [ ] Replace every `replace-me-*` credential and set `REQUIRE_API_KEY=true`
 - [ ] Integration tests against a real Redis
 - [ ] Prometheus / OpenTelemetry export alongside the Redis counters
 - [ ] Per-identity allowlists and denylists

@@ -18,17 +18,32 @@ let lastRefresh = 0;
 
 const clone = (policy) => ({ ...policy });
 
+/**
+ * Validates an override patch.
+ *
+ * The ceilings matter as much as the floors: retuning limits live is the
+ * feature, but an unbounded `capacity` is an off switch for the limiter — and
+ * on a publicly reachable dashboard that switch is reachable by anyone. Ranges
+ * come from config.policyLimits.
+ */
 const validate = (patch) => {
   const errors = [];
-  if (patch.capacity !== undefined && !(Number(patch.capacity) > 0)) {
-    errors.push('capacity must be a positive number');
+  const { maxCapacity, maxRefillRate, maxCost } = config.policyLimits;
+
+  const check = (field, floorOk, floorLabel, max) => {
+    const value = Number(patch[field]);
+    if (!floorOk(value)) errors.push(`${field} must be ${floorLabel}`);
+    else if (value > max) errors.push(`${field} must not exceed ${max}`);
+  };
+
+  const positive = (value) => value > 0;
+  const nonNegative = (value) => value >= 0;
+
+  if (patch.capacity !== undefined) check('capacity', positive, 'a positive number', maxCapacity);
+  if (patch.refillRate !== undefined) {
+    check('refillRate', nonNegative, 'zero or greater', maxRefillRate);
   }
-  if (patch.refillRate !== undefined && !(Number(patch.refillRate) >= 0)) {
-    errors.push('refillRate must be zero or greater');
-  }
-  if (patch.cost !== undefined && !(Number(patch.cost) > 0)) {
-    errors.push('cost must be a positive number');
-  }
+  if (patch.cost !== undefined) check('cost', positive, 'a positive number', maxCost);
   if (patch.scope !== undefined && !['ip', 'apiKey', 'user', 'global'].includes(patch.scope)) {
     errors.push('scope must be one of ip, apiKey, user, global');
   }

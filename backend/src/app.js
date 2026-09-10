@@ -11,16 +11,22 @@ import routes from './routes/index.js';
 export const createApp = () => {
   const app = express();
 
-  // Behind Docker/nginx the client IP arrives in X-Forwarded-For; without this
-  // every request would share one bucket keyed on the proxy address.
-  app.set('trust proxy', true);
+  // Decides where req.ip comes from, and therefore what the limiter buckets
+  // on. Defaults to `false` (use the socket address): trusting the whole
+  // X-Forwarded-For chain would let any caller mint a fresh bucket per request
+  // just by varying the header. Set TRUST_PROXY to the hop count in front of
+  // the API — see config/index.js.
+  app.set('trust proxy', config.trustProxy);
   app.disable('x-powered-by');
 
   app.use(helmet());
   app.use(
     cors({
       origin: config.corsOrigins.includes('*') ? true : config.corsOrigins,
-      credentials: true,
+      // The API authenticates with headers, never cookies, so credentialed
+      // CORS buys nothing — and combining it with a reflected origin (the '*'
+      // case above) would let any site call this API as the visitor.
+      credentials: false,
       // The dashboard reads the limiter's decision straight off the response.
       exposedHeaders: [
         'X-RateLimit-Policy',
