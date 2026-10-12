@@ -12,7 +12,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # NEXT_PUBLIC_* is inlined into the client bundle at build time, so these have
 # to arrive as build args — setting them at runtime would have no effect.
 ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:4000
-ARG NEXT_PUBLIC_POLL_INTERVAL_MS=2000
+ARG NEXT_PUBLIC_POLL_INTERVAL_MS=10000
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 ENV NEXT_PUBLIC_POLL_INTERVAL_MS=$NEXT_PUBLIC_POLL_INTERVAL_MS
 

@@ -17,6 +17,9 @@ interface UseMetricsResult {
 /**
  * Polls the metrics summary on an interval.
  *
+ * Polling pauses while the tab is hidden (and refreshes once on return), so a
+ * forgotten background tab does not burn through the Redis command budget.
+ *
  * Keeps the previous snapshot on screen while a refresh is in flight so the
  * dashboard never flashes empty, and aborts the outstanding request when the
  * interval or window changes.
@@ -53,9 +56,16 @@ export const useMetrics = (
     void load();
     if (intervalMs <= 0) return undefined; // paused
 
-    const timer = setInterval(() => void load(), intervalMs);
+    const timer = setInterval(() => {
+      if (document.visibilityState === 'visible') void load();
+    }, intervalMs);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void load();
+    };
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
       controllerRef.current?.abort();
     };
   }, [load, intervalMs]);

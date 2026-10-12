@@ -202,6 +202,8 @@ repo is a placeholder.**
 | `POLICY_MAX_COST` | `100` | Ceiling on a runtime `cost` override |
 | `METRICS_WINDOW_SECONDS` | `120` | History the dashboard charts |
 | `METRICS_TTL_SECONDS` | `300` | Retention of per-second samples |
+| `METRICS_CACHE_SECONDS` | `10` | How long one dashboard summary is shared by all clients |
+| `POLICY_OVERRIDE_REFRESH_SECONDS` | `30` | How often policy overrides are re-read from Redis |
 | `ADMIN_TOKEN` | `replace-me-…` | Bearer token for mutating endpoints |
 | `DASHBOARD_API_KEY` | `replace-me-…` | Key for the read-only metrics API |
 | `REQUIRE_API_KEY` | `true` | Enforce the dashboard key |
@@ -215,7 +217,7 @@ repo is a placeholder.**
 | `ADMIN_TOKEN` | Attached by the proxy for mutating calls |
 | `ALLOW_ADMIN_PROXY` | `false` makes the proxy refuse mutations |
 | `NEXT_PUBLIC_API_BASE_URL` | Browser-visible API base for the traffic generator |
-| `NEXT_PUBLIC_POLL_INTERVAL_MS` | Dashboard poll interval |
+| `NEXT_PUBLIC_POLL_INTERVAL_MS` | Dashboard poll interval (default `10000`; use one of the dropdown values) |
 
 > `NEXT_PUBLIC_*` values are **inlined at build time**. Under compose they are passed as
 > build args; change one and rebuild the frontend image.
@@ -423,6 +425,25 @@ allowed to mutate anything you care about.
 digests, so neither their contents nor their length leak through response timing.
 Generate them with `openssl rand -base64 32`. Every value committed to this repo is a
 placeholder, and the startup audit says so.
+
+---
+
+## Redis command budget
+
+Metered Redis tiers (e.g. a 500k-commands/month free plan) count every command, so the
+dashboard is built to be cheap to leave open:
+
+- One `/api/metrics` summary is **cached for `METRICS_CACHE_SECONDS`** and shared by every
+  client, with concurrent rebuilds collapsed into one.
+- Per-second chart points that can no longer change are remembered in-process, so a refresh
+  reads only the newest seconds instead of the whole window.
+- `INFO` is a single call, cached for 60 s. Policy overrides refresh every 30 s.
+- The recent-requests feed is buffered and written in batches every 5 s, not per request.
+- The browser polls every 10 s by default and **pauses while the tab is hidden**.
+
+Measured against a local Redis: a cached summary costs ~0 commands, an uncached refresh ~26
+(was ~133). Each limited request is one `EVALSHA`; Redis itself also counts the ~10 commands
+the script runs internally, so check whether your provider bills those before sizing a plan.
 
 ---
 

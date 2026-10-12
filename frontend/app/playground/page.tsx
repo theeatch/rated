@@ -9,7 +9,9 @@ import { useMetrics } from '@/lib/useMetrics';
 
 export default function PlaygroundPage() {
   const [windowSeconds] = useState(60);
-  const { data, refresh } = useMetrics(windowSeconds, 1000);
+  // The traffic table updates live on its own; the charts only need the shared,
+  // server-cached summary, so a slow poll is enough (and keeps Redis usage low).
+  const { data } = useMetrics(windowSeconds, 5000);
 
   return (
     <>
@@ -22,7 +24,7 @@ export default function PlaygroundPage() {
       </header>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <TrafficSimulator onTraffic={refresh} />
+        <TrafficSimulator />
         {data ? <ThroughputChart series={data.series} /> : null}
       </div>
 

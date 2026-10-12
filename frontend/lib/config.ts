@@ -3,13 +3,13 @@
 export const PUBLIC_API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') || 'http://localhost:4000';
 
-export const POLL_INTERVAL_MS = Number(process.env.NEXT_PUBLIC_POLL_INTERVAL_MS) || 2000;
+export const POLL_INTERVAL_MS = Number(process.env.NEXT_PUBLIC_POLL_INTERVAL_MS) || 10_000;
 
 /** Poll intervals offered in the dashboard header. */
 export const POLL_OPTIONS = [
-  { label: '1s', value: 1000 },
-  { label: '2s', value: 2000 },
   { label: '5s', value: 5000 },
+  { label: '10s', value: 10_000 },
+  { label: '30s', value: 30_000 },
   { label: 'Paused', value: 0 },
 ];
 

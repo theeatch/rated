@@ -2,7 +2,9 @@ import { config } from '../config/index.js';
 import { getRedisSnapshot } from '../redis/info.js';
 import { getUtilization } from '../services/bucket.service.js';
 import {
+  cachedSummary,
   getRecentEvents,
+  invalidateSummaryCache,
   getTimeseries,
   getTotals,
   resetMetrics,
@@ -21,8 +23,7 @@ const clampWindow = (value) => {
  * One call that backs the whole dashboard — throughput, token utilisation,
  * blocked requests and Redis state — so every panel renders the same instant.
  */
-export const summary = asyncHandler(async (req, res) => {
-  const windowSeconds = clampWindow(req.query.window);
+const buildSummary = async (windowSeconds, eventLimit) => {
   await refreshOverrides();
 
   const [totals, series, utilization, redis, events] = await Promise.all([
@@ -30,10 +31,10 @@ export const summary = asyncHandler(async (req, res) => {
     getTimeseries(windowSeconds),
     getUtilization(),
     getRedisSnapshot(),
-    getRecentEvents(Number.parseInt(req.query.events, 10) || 25),
+    getRecentEvents(eventLimit),
   ]);
 
-  res.json({
+  return {
     generatedAt: Date.now(),
     windowSeconds,
     throughput: summariseThroughput(series),
@@ -49,7 +50,17 @@ export const summary = asyncHandler(async (req, res) => {
       defaultPolicy: config.rateLimit.defaultPolicy,
       bucketTtlSeconds: config.rateLimit.bucketTtlSeconds,
     },
-  });
+  };
+};
+
+export const summary = asyncHandler(async (req, res) => {
+  const windowSeconds = clampWindow(req.query.window);
+  const parsedEvents = Number.parseInt(req.query.events, 10);
+  const eventLimit = Math.min(Math.max(Number.isFinite(parsedEvents) ? parsedEvents : 25, 1), 200);
+
+  res.json(
+    await cachedSummary(`${windowSeconds}:${eventLimit}`, () => buildSummary(windowSeconds, eventLimit)),
+  );
 });
 
 export const timeseries = asyncHandler(async (req, res) => {
@@ -73,6 +84,7 @@ export const events = asyncHandler(async (req, res) => {
 
 export const reset = asyncHandler(async (_req, res) => {
   const removed = await resetMetrics();
+  invalidateSummaryCache();
   res.json({ status: 'ok', keysRemoved: removed });
 });
 

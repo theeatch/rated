@@ -62,6 +62,10 @@ export const config = {
     // 'open' keeps serving traffic when Redis is down, 'closed' rejects it.
     failureMode: process.env.FAILURE_MODE === 'closed' ? 'closed' : 'open',
     bucketTtlSeconds: int(process.env.BUCKET_TTL_SECONDS, 3600),
+    // How often the in-process copy of policy overrides is re-read from Redis.
+    // Edits made on this node apply immediately; this only bounds how stale a
+    // second node can be, and every refresh is a Redis command.
+    overrideRefreshMs: int(process.env.POLICY_OVERRIDE_REFRESH_SECONDS, 30) * 1000,
   },
 
   /**
@@ -80,6 +84,8 @@ export const config = {
   metrics: {
     windowSeconds: int(process.env.METRICS_WINDOW_SECONDS, 120),
     ttlSeconds: int(process.env.METRICS_TTL_SECONDS, 300),
+    // Dashboard summaries are shared for this long, however many clients poll.
+    cacheSeconds: int(process.env.METRICS_CACHE_SECONDS, 10),
   },
 
   auth: {

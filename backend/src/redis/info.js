@@ -21,7 +21,14 @@ const num = (value) => {
  * Snapshot of Redis health for the dashboard's "Redis state" panel.
  * Never throws — a degraded Redis should still render, just marked offline.
  */
+const SNAPSHOT_TTL_MS = 60_000;
+let cachedSnapshot = null;
+
 export const getRedisSnapshot = async () => {
+  if (cachedSnapshot && Date.now() - cachedSnapshot.at < SNAPSHOT_TTL_MS && isRedisReady()) {
+    return cachedSnapshot.value;
+  }
+
   if (!isRedisReady()) {
     return {
       connected: false,
@@ -38,25 +45,22 @@ export const getRedisSnapshot = async () => {
   const startedAt = Date.now();
 
   try {
-    const [rawServer, rawMemory, rawStats, rawClients, rawKeyspace] = await Promise.all([
-      redis.info('server'),
-      redis.info('memory'),
-      redis.info('stats'),
-      redis.info('clients'),
-      redis.info('keyspace'),
-    ]);
+    // One INFO round trip instead of five; the field names don't collide, so a
+    // single flat parse serves every section.
+    const raw = await redis.info();
     const latencyMs = Date.now() - startedAt;
 
-    const server = parseInfo(rawServer);
-    const memory = parseInfo(rawMemory);
-    const stats = parseInfo(rawStats);
-    const clients = parseInfo(rawClients);
-    const keyspace = parseInfo(rawKeyspace);
+    const info = parseInfo(raw);
+    const server = info;
+    const memory = info;
+    const stats = info;
+    const clients = info;
+    const keyspace = info;
 
     const dbLine = keyspace[`db${redis.options.db ?? 0}`] || '';
     const keyCount = num(dbLine.match(/keys=(\d+)/)?.[1]) ?? 0;
 
-    return {
+    const value = {
       connected: true,
       error: null,
       latencyMs,
@@ -81,6 +85,8 @@ export const getRedisSnapshot = async () => {
       },
       keyspace: { keys: keyCount },
     };
+    cachedSnapshot = { at: Date.now(), value };
+    return value;
   } catch (error) {
     return {
       connected: false,

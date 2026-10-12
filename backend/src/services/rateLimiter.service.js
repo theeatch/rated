@@ -92,9 +92,9 @@ export const consume = async ({ policyName, identity, cost, route = 'unknown' })
       refillRate: policy.refillRate,
     };
 
-    // Display-only feed for the dashboard; deliberately outside the atomic
-    // section so a slow trim can never delay a rate-limit decision.
-    recordEvent({ ...decision, route, at: timestamp }).catch(() => {});
+    // Display-only feed for the dashboard; buffered and flushed in batches so it
+    // costs a handful of Redis commands per flush, not several per request.
+    queueEvent({ ...decision, route, at: timestamp });
 
     return decision;
   } catch (error) {
@@ -114,26 +114,50 @@ export const consume = async ({ policyName, identity, cost, route = 'unknown' })
   }
 };
 
-const recordEvent = async (event) => {
-  if (!isRedisReady()) return;
-  const redis = getRedis();
-  await redis
-    .multi()
-    .lpush(
-      eventsKey(),
-      JSON.stringify({
-        at: event.at,
-        policy: event.policy,
-        identity: event.identity,
-        route: event.route,
-        allowed: event.allowed,
-        remaining: Math.round(event.remaining * 100) / 100,
-        limit: event.limit,
-      }),
-    )
-    .ltrim(eventsKey(), 0, EVENT_LOG_SIZE - 1)
-    .expire(eventsKey(), config.metrics.ttlSeconds)
-    .exec();
+const EVENT_FLUSH_MS = 5000;
+let eventBuffer = [];
+let flushTimer = null;
+
+const flushEvents = async () => {
+  flushTimer = null;
+  const batch = eventBuffer;
+  eventBuffer = [];
+  if (batch.length === 0 || !isRedisReady()) return;
+
+  try {
+    // The buffer is oldest-first and LPUSH with several values leaves the last
+    // one at the head, so the newest event still ends up first in the list.
+    await getRedis()
+      .pipeline()
+      .lpush(eventsKey(), ...batch)
+      .ltrim(eventsKey(), 0, EVENT_LOG_SIZE - 1)
+      .expire(eventsKey(), config.metrics.ttlSeconds)
+      .exec();
+  } catch (error) {
+    logger.warn('ratelimit.event_flush_failed', { error: error.message });
+  }
+};
+
+const queueEvent = (event) => {
+  eventBuffer.push(
+    JSON.stringify({
+      at: event.at,
+      policy: event.policy,
+      identity: event.identity,
+      route: event.route,
+      allowed: event.allowed,
+      remaining: Math.round(event.remaining * 100) / 100,
+      limit: event.limit,
+    }),
+  );
+  // Only the newest EVENT_LOG_SIZE can ever be shown, so never hold more.
+  if (eventBuffer.length > EVENT_LOG_SIZE) {
+    eventBuffer.splice(0, eventBuffer.length - EVENT_LOG_SIZE);
+  }
+  if (!flushTimer) {
+    flushTimer = setTimeout(() => void flushEvents(), EVENT_FLUSH_MS);
+    flushTimer.unref?.();
+  }
 };
 
 /** Drops the bucket for one identity — used by the dashboard's reset action. */

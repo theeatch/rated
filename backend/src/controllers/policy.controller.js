@@ -1,5 +1,6 @@
 import { isPolicy } from '../config/policies.js';
 import { getPolicy, listPolicies, refreshOverrides, resetPolicy, updatePolicy } from '../services/policy.service.js';
+import { invalidateSummaryCache } from '../services/metrics.service.js';
 import { listBuckets } from '../services/bucket.service.js';
 import { resetBucket } from '../services/rateLimiter.service.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -22,11 +23,15 @@ export const detail = asyncHandler(async (req, res) => {
 });
 
 export const update = asyncHandler(async (req, res) => {
-  res.json({ policy: await updatePolicy(req.params.name, req.body || {}) });
+  const policy = await updatePolicy(req.params.name, req.body || {});
+  invalidateSummaryCache();
+  res.json({ policy });
 });
 
 export const reset = asyncHandler(async (req, res) => {
-  res.json({ policy: await resetPolicy(req.params.name) });
+  const policy = await resetPolicy(req.params.name);
+  invalidateSummaryCache();
+  res.json({ policy });
 });
 
 /** Drops one identity's bucket so it starts full again. */
@@ -34,6 +39,7 @@ export const clearBucket = asyncHandler(async (req, res) => {
   const { identity } = req.body || {};
   if (!identity) throw badRequest('An "identity" is required');
   const removed = await resetBucket(req.params.name, identity);
+  invalidateSummaryCache();
   res.json({ status: 'ok', removed });
 });
 

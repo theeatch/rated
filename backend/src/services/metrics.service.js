@@ -49,9 +49,18 @@ export const getTotals = async () => {
 };
 
 /**
+ * Seconds older than this can no longer be written to, so a point read for one
+ * is final and never needs to be fetched again.
+ */
+const SETTLED_AFTER_SECONDS = 3;
+const settledPoints = new Map();
+
+/**
  * Per-second throughput series for the dashboard chart.
- * One hash per wall-clock second is written by the rate-limit script; we read
- * the trailing window in a single pipeline and zero-fill any quiet seconds.
+ * One hash per wall-clock second is written by the rate-limit script. Settled
+ * seconds are immutable, so they are remembered in-process and each poll only
+ * reads the few seconds it has not seen yet — not the whole window — which is
+ * the difference between ~5 and ~120 Redis commands per refresh.
  */
 export const getTimeseries = async (windowSeconds = config.metrics.windowSeconds) => {
   const end = nowSeconds();
@@ -67,13 +76,30 @@ export const getTimeseries = async (windowSeconds = config.metrics.windowSeconds
     }));
   }
 
-  const pipeline = getRedis().pipeline();
-  for (const second of seconds) pipeline.hgetall(timeseriesKey(second));
-  const results = await pipeline.exec();
+  const missing = seconds.filter((second) => !settledPoints.has(second));
+  const fetched = new Map();
 
-  return seconds.map((second, index) => {
-    const [error, hash] = results[index];
-    const counts = error ? EMPTY_TOTALS : toCounts(hash);
+  if (missing.length > 0) {
+    const pipeline = getRedis().pipeline();
+    for (const second of missing) pipeline.hgetall(timeseriesKey(second));
+    const results = await pipeline.exec();
+
+    missing.forEach((second, index) => {
+      const [error, hash] = results[index];
+      const counts = error ? EMPTY_TOTALS : toCounts(hash);
+      fetched.set(second, counts);
+      if (!error && second <= end - SETTLED_AFTER_SECONDS) settledPoints.set(second, counts);
+    });
+  }
+
+  // Bound memory to what the longest window can ask for.
+  const oldest = end - config.metrics.ttlSeconds;
+  for (const second of settledPoints.keys()) {
+    if (second < oldest) settledPoints.delete(second);
+  }
+
+  return seconds.map((second) => {
+    const counts = settledPoints.get(second) ?? fetched.get(second) ?? EMPTY_TOTALS;
     return {
       second,
       timestamp: second * 1000,
@@ -142,7 +168,34 @@ export const resetMetrics = async () => {
     tsKeys.push(...found);
   } while (cursor !== '0');
 
+  settledPoints.clear();
   return redis.del(...keys, ...tsKeys);
 };
 
-export default { getTotals, getTimeseries, getRecentEvents, summariseThroughput, resetMetrics };
+/**
+ * Shares one dashboard summary between every client for `cacheSeconds`.
+ * The stored value is the in-flight promise, so concurrent requests during a
+ * rebuild also collapse into a single set of Redis reads.
+ */
+const MAX_CACHED_SUMMARIES = 20;
+const summaryCache = new Map();
+
+export const cachedSummary = (key, build) => {
+  const ttlMs = config.metrics.cacheSeconds * 1000;
+  const hit = summaryCache.get(key);
+  if (hit && Date.now() - hit.at < ttlMs) return hit.promise;
+
+  if (summaryCache.size >= MAX_CACHED_SUMMARIES) summaryCache.clear();
+  const promise = build();
+  const entry = { at: Date.now(), promise };
+  summaryCache.set(key, entry);
+  promise.catch(() => {
+    if (summaryCache.get(key) === entry) summaryCache.delete(key);
+  });
+  return promise;
+};
+
+/** Call after anything that changes what the dashboard shows (policy edits, resets). */
+export const invalidateSummaryCache = () => summaryCache.clear();
+
+export default { getTotals, getTimeseries, getRecentEvents, summariseThroughput, resetMetrics, cachedSummary, invalidateSummaryCache };

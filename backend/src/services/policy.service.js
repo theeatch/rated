@@ -8,10 +8,9 @@ import { badRequest, notFound } from '../utils/errors.js';
 /**
  * Policies are defined in code and may be overridden at runtime so the
  * dashboard can tune limits live. Overrides are cached in-process and
- * refreshed from Redis on a short interval to keep the hot path allocation
+ * refreshed from Redis on an interval (config.rateLimit.overrideRefreshMs) to keep the hot path allocation
  * free — the rate-limit middleware must not await an extra round trip.
  */
-const OVERRIDE_REFRESH_MS = 2000;
 
 let overrides = {};
 let lastRefresh = 0;
@@ -52,7 +51,7 @@ const validate = (patch) => {
 
 export const refreshOverrides = async ({ force = false } = {}) => {
   if (!isRedisReady()) return overrides;
-  if (!force && Date.now() - lastRefresh < OVERRIDE_REFRESH_MS) return overrides;
+  if (!force && Date.now() - lastRefresh < config.rateLimit.overrideRefreshMs) return overrides;
 
   try {
     const raw = await getRedis().hgetall(policyOverrideKey());
