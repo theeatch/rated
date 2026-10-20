@@ -32,9 +32,9 @@ export default function PoliciesPage() {
 
   return (
     <>
-      <header className="mb-4">
-        <h1 className="text-[18px] font-semibold">Policies</h1>
-        <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
+      <header className="mb-6">
+        <h1 className="page-title">Policies</h1>
+        <p className="mt-2 max-w-2xl text-[14px]" style={{ color: 'var(--text-secondary)' }}>
           Overrides apply immediately across every API node — they are stored in Redis and picked
           up on the next refresh.
         </p>

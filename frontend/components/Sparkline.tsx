@@ -36,10 +36,18 @@ export function Sparkline({
   const lastY = height - ((points[points.length - 1] - min) / span) * (height - 4) - 2;
 
   return (
-    <svg width={width} height={height} role="img" aria-hidden focusable="false">
-      <path d={path} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-      {/* 2px surface ring keeps the end-dot legible where it crosses the line. */}
-      <circle cx={lastX} cy={lastY} r={3.5} fill={color} stroke="var(--surface-1)" strokeWidth={2} />
+    <svg width={width} height={height} role="img" aria-hidden focusable="false" style={{ overflow: 'visible' }}>
+      <path d={path} fill="none" stroke={color} strokeWidth={2} strokeLinecap="butt" strokeLinejoin="miter" />
+      {/* 2px surface ring keeps the end mark legible where it crosses the line. */}
+      <rect
+        x={lastX - 3.5}
+        y={lastY - 3.5}
+        width={7}
+        height={7}
+        fill={color}
+        stroke="var(--surface-1)"
+        strokeWidth={2}
+      />
     </svg>
   );
 }

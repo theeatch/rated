@@ -19,12 +19,12 @@ export function StatTile({ label, value, detail, markColor, trend, trendColor }:
       <div className="min-w-0">
         <div className="flex items-center gap-1.5">
           {markColor ? <span className="swatch" style={{ background: markColor }} aria-hidden /> : null}
-          <span className="card-subtitle">{label}</span>
+          <span className="label">{label}</span>
         </div>
         {/* Proportional figures — tabular-nums is for aligned columns only. */}
         <div className="metric-value mt-1.5">{value}</div>
         {detail ? (
-          <div className="mt-0.5 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+          <div className="mt-1 text-[12px]" style={{ color: 'var(--text-muted)' }}>
             {detail}
           </div>
         ) : null}

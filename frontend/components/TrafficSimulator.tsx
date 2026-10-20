@@ -66,7 +66,7 @@ export function TrafficSimulator({ onTraffic }: { onTraffic?: () => void }) {
       </header>
 
       <div className="mb-3 flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+        <label className="label flex flex-col gap-1">
           Endpoint
           <select
             className="control"
@@ -81,7 +81,7 @@ export function TrafficSimulator({ onTraffic }: { onTraffic?: () => void }) {
           </select>
         </label>
 
-        <label className="flex flex-col gap-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+        <label className="label flex flex-col gap-1">
           Requests / second
           <input
             className="control w-24"
@@ -93,7 +93,7 @@ export function TrafficSimulator({ onTraffic }: { onTraffic?: () => void }) {
           />
         </label>
 
-        <label className="flex flex-col gap-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+        <label className="label flex flex-col gap-1">
           API key (partner policy)
           <input
             className="control w-40"

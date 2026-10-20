@@ -3,70 +3,98 @@
 /* ---------------------------------------------------------------------------
    Design tokens.
 
+   One palette, used the same way everywhere:
+
+     paper / ink   warm neutrals — page, panels, text, rules
+     teal          allowed traffic, healthy state, the single accent
+     vermilion     blocked traffic, critical state
+     ochre         warning / elevated
+
    Mirrors lib/colors.ts, which feeds the same values to Recharts (SVG
    presentation attributes don't resolve var()). Change both together.
 
    Dark values are declared twice on purpose: the media query follows the OS,
    the [data-theme] scope follows the in-app toggle, and the toggle must win in
    both directions.
+
+   Shape rule: nothing is rounded, nothing is translucent, nothing casts a
+   shadow. Structure comes from rules (1px hairlines, 2px ink rules) only.
 --------------------------------------------------------------------------- */
 :root {
   color-scheme: light;
 
-  --surface-1: #fcfcfb;
-  --plane: #f9f9f7;
-  --grid: #e1e0d9;
-  --axis: #c3c2b7;
-  --text-primary: #0b0b0b;
-  --text-secondary: #52514e;
-  --text-muted: #898781;
-  --border: rgba(11, 11, 11, 0.1);
+  --plane: #efebe1;
+  --surface-1: #f7f4ec;
+  --text-primary: #17160f;
+  --text-secondary: #4b483e;
+  --text-muted: #6b675a;
+  --on-ink: #f7f4ec;
+  --border: #cfc8b5;
+  --rule: #17160f;
+  --grid: #ddd6c4;
+  --axis: #a9a18c;
 
-  --series-allowed: #2a78d6;
-  --series-blocked: #d03b3b;
+  --accent: #0b6b6b;
+  --series-allowed: #0b6b6b;
+  --series-blocked: #d23f17;
 
-  --status-good: #0ca30c;
-  --status-warning: #fab219;
-  --status-serious: #ec835a;
-  --status-critical: #d03b3b;
+  --status-good: #0b6b6b;
+  --status-warning: #a8700c;
+  --status-serious: #c25a12;
+  --status-critical: #d23f17;
 
-  --radius: 10px;
-  --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: var(--font-schibsted), 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: var(--font-azeret), ui-monospace, 'SF Mono', Menlo, monospace;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
 
-    --surface-1: #1a1a19;
-    --plane: #0d0d0d;
-    --grid: #2c2c2a;
-    --axis: #383835;
-    --text-primary: #ffffff;
-    --text-secondary: #c3c2b7;
-    --text-muted: #898781;
-    --border: rgba(255, 255, 255, 0.1);
+    --plane: #11100c;
+    --surface-1: #1a1913;
+    --text-primary: #ede8db;
+    --text-secondary: #bdb7a6;
+    --text-muted: #8f8a79;
+    --on-ink: #11100c;
+    --border: #38362d;
+    --rule: #ede8db;
+    --grid: #2a2820;
+    --axis: #4a473b;
 
-    --series-allowed: #3987e5;
-    --series-blocked: #d03b3b;
+    --accent: #3db8ae;
+    --series-allowed: #3db8ae;
+    --series-blocked: #f2693f;
+
+    --status-good: #3db8ae;
+    --status-warning: #e2a630;
+    --status-serious: #e8833a;
+    --status-critical: #f2693f;
   }
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --surface-1: #1a1a19;
-  --plane: #0d0d0d;
-  --grid: #2c2c2a;
-  --axis: #383835;
-  --text-primary: #ffffff;
-  --text-secondary: #c3c2b7;
-  --text-muted: #898781;
-  --border: rgba(255, 255, 255, 0.1);
+  --plane: #11100c;
+  --surface-1: #1a1913;
+  --text-primary: #ede8db;
+  --text-secondary: #bdb7a6;
+  --text-muted: #8f8a79;
+  --on-ink: #11100c;
+  --border: #38362d;
+  --rule: #ede8db;
+  --grid: #2a2820;
+  --axis: #4a473b;
 
-  --series-allowed: #3987e5;
-  --series-blocked: #d03b3b;
+  --accent: #3db8ae;
+  --series-allowed: #3db8ae;
+  --series-blocked: #f2693f;
+
+  --status-good: #3db8ae;
+  --status-warning: #e2a630;
+  --status-serious: #e8833a;
+  --status-critical: #f2693f;
 }
 
 html,
@@ -77,44 +105,74 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+::selection {
+  background: var(--text-primary);
+  color: var(--plane);
+}
+
 /* --- Building blocks ----------------------------------------------------- */
 @layer components {
+  /* A panel is a flat sheet: hairline on three sides, a 2px ink rule on top. */
   .card {
     background: var(--surface-1);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1rem 1.125rem;
+    border-top: 2px solid var(--rule);
+    padding: 1rem 1.125rem 1.125rem;
   }
 
   .card-title {
-    font-size: 0.8125rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
     font-weight: 600;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: var(--text-primary);
   }
 
   .card-subtitle {
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+  }
+
+  .page-title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+    color: var(--text-primary);
+  }
+
+  /* Small mono caption for field names and figure labels. */
+  .label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     color: var(--text-muted);
   }
 
   /* Values, labels and legends wear text tokens — never a series color. */
   .metric-value {
-    font-size: 1.75rem;
-    font-weight: 600;
+    font-family: var(--font-mono);
+    font-size: 1.875rem;
+    font-weight: 500;
+    letter-spacing: -0.03em;
     line-height: 1.1;
     color: var(--text-primary);
   }
 
   .hero-value {
-    font-size: 3.25rem;
-    font-weight: 600;
+    font-family: var(--font-mono);
+    font-size: 4rem;
+    font-weight: 500;
     line-height: 1;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.05em;
     color: var(--text-primary);
   }
 
+  /* Anything numeric is set in the mono face so columns and figures align. */
   .tabular {
+    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
   }
 
@@ -122,7 +180,6 @@ body {
     display: inline-block;
     width: 10px;
     height: 10px;
-    border-radius: 3px;
     flex: none;
   }
 
@@ -131,9 +188,10 @@ body {
     align-items: center;
     gap: 0.375rem;
     padding: 0.1875rem 0.5rem;
-    border-radius: 999px;
     border: 1px solid var(--border);
+    font-family: var(--font-mono);
     font-size: 0.6875rem;
+    letter-spacing: 0.02em;
     color: var(--text-secondary);
     white-space: nowrap;
   }
@@ -141,61 +199,82 @@ body {
   .control {
     background: var(--surface-1);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-bottom: 2px solid var(--rule);
     color: var(--text-primary);
+    font-family: var(--font-mono);
     font-size: 0.8125rem;
     padding: 0.3125rem 0.625rem;
   }
 
-  .control:focus-visible {
-    outline: 2px solid var(--series-allowed);
-    outline-offset: 1px;
+  /* Native selects draw a rounded OS chevron; replace it with a square one. */
+  select.control {
+    appearance: none;
+    background-image:
+      linear-gradient(45deg, transparent 50%, var(--text-primary) 50%),
+      linear-gradient(135deg, var(--text-primary) 50%, transparent 50%);
+    background-position:
+      calc(100% - 15px) 55%,
+      calc(100% - 10px) 55%;
+    background-repeat: no-repeat;
+    background-size: 5px 5px;
+    padding-right: 1.75rem;
+  }
+
+  .control:focus-visible,
+  .btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
 
   .btn {
-    background: var(--surface-1);
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    background: transparent;
+    border: 1px solid var(--rule);
     color: var(--text-primary);
     cursor: pointer;
-    font-size: 0.8125rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
     font-weight: 500;
+    letter-spacing: 0.04em;
     padding: 0.375rem 0.75rem;
-    transition: background-color 120ms ease;
+    text-transform: uppercase;
+    transition:
+      background-color 120ms ease,
+      color 120ms ease;
   }
 
   .btn:hover:not(:disabled) {
-    background: color-mix(in oklab, var(--text-primary) 6%, var(--surface-1));
+    background: var(--text-primary);
+    color: var(--on-ink);
   }
 
   .btn:disabled {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--text-muted);
     cursor: not-allowed;
-    opacity: 0.5;
   }
 
   .btn-primary {
-    background: var(--series-allowed);
-    border-color: transparent;
-    color: #ffffff;
+    background: var(--text-primary);
+    color: var(--on-ink);
   }
 
   .btn-primary:hover:not(:disabled) {
-    background: color-mix(in oklab, #000 12%, var(--series-allowed));
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-ink);
   }
 
-  /* Meter: fill carries severity, track is a lighter step of the fill's own
-     ramp so state reads across the whole bar. */
+  /* Meter: fill carries severity; the track is a hairline channel. */
   .meter-track {
-    background: color-mix(in oklab, var(--meter-fill, var(--series-allowed)) 16%, var(--surface-1));
-    border-radius: 999px;
-    height: 8px;
+    background: var(--grid);
+    height: 10px;
     overflow: hidden;
     width: 100%;
   }
 
   .meter-fill {
-    background: var(--meter-fill, var(--series-allowed));
-    border-radius: 999px;
+    background: var(--meter-fill, var(--accent));
     height: 100%;
     transition: width 300ms ease;
   }
@@ -207,18 +286,22 @@ body {
   }
 
   .data-table th {
+    border-bottom: 1px solid var(--rule);
     color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
     font-weight: 500;
-    text-align: left;
+    letter-spacing: 0.06em;
     padding: 0.375rem 0.5rem;
-    border-bottom: 1px solid var(--border);
+    text-align: left;
+    text-transform: uppercase;
     white-space: nowrap;
   }
 
   .data-table td {
+    border-bottom: 1px solid var(--border);
     color: var(--text-secondary);
-    padding: 0.375rem 0.5rem;
-    border-bottom: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
+    padding: 0.4375rem 0.5rem;
   }
 
   .data-table tr:last-child td {
@@ -230,4 +313,10 @@ body {
    controls instead. */
 .recharts-wrapper:focus {
   outline: none;
+}
+
+/* Chart text can't take var() as an SVG attribute, but CSS can. */
+.recharts-text,
+.recharts-cartesian-axis-tick-value {
+  font-family: var(--font-mono);
 }

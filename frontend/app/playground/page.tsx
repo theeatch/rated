@@ -15,9 +15,9 @@ export default function PlaygroundPage() {
 
   return (
     <>
-      <header className="mb-4">
-        <h1 className="text-[18px] font-semibold">Playground</h1>
-        <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
+      <header className="mb-6">
+        <h1 className="page-title">Playground</h1>
+        <p className="mt-2 max-w-2xl text-[14px]" style={{ color: 'var(--text-secondary)' }}>
           Drive traffic at the protected endpoints and watch the token bucket drain, block, and
           refill in real time.
         </p>

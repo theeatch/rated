@@ -9,44 +9,46 @@ import { useEffect, useState } from 'react';
  * `var(--token)` — so the values live here in TS and are mirrored as CSS
  * custom properties in `app/globals.css`. Change both together.
  *
- * Validated with the data-viz six checks against both surfaces (#fcfcfb light,
- * #1a1a19 dark): lightness band, chroma floor, CVD separation
- * (worst pair ΔE 23.8 light / 25.7 dark), normal-vision floor, contrast ≥ 3:1.
+ * The palette is warm paper and ink plus three signal hues: teal (allowed,
+ * healthy, the one accent), vermilion (blocked, critical) and ochre (warning).
+ * Checked against both card surfaces (#f7f4ec light, #1a1913 dark): every
+ * series and status hue is ≥ 3.8:1 in light and ≥ 5.7:1 in dark, muted text is
+ * ≥ 5:1, and teal vs vermilion stays at ΔE ≥ 43 under simulated protanopia,
+ * deuteranopia and tritanopia.
  *
- * `allowed` is categorical slot 1 (blue). `blocked` is the reserved status
- * "critical" step — identical in both modes — and always ships with a label,
- * never color alone.
+ * `blocked` is the "critical" step and always ships with a label, never color
+ * alone.
  */
 export const PALETTE = {
   light: {
-    surface: '#fcfcfb',
-    plane: '#f9f9f7',
-    grid: '#e1e0d9',
-    axis: '#c3c2b7',
-    muted: '#898781',
-    textPrimary: '#0b0b0b',
-    textSecondary: '#52514e',
-    allowed: '#2a78d6',
-    blocked: '#d03b3b',
-    accent: '#2a78d6',
-    warning: '#fab219',
-    good: '#0ca30c',
-    serious: '#ec835a',
+    surface: '#f7f4ec',
+    plane: '#efebe1',
+    grid: '#ddd6c4',
+    axis: '#a9a18c',
+    muted: '#6b675a',
+    textPrimary: '#17160f',
+    textSecondary: '#4b483e',
+    allowed: '#0b6b6b',
+    blocked: '#d23f17',
+    accent: '#0b6b6b',
+    warning: '#a8700c',
+    good: '#0b6b6b',
+    serious: '#c25a12',
   },
   dark: {
-    surface: '#1a1a19',
-    plane: '#0d0d0d',
-    grid: '#2c2c2a',
-    axis: '#383835',
-    muted: '#898781',
-    textPrimary: '#ffffff',
-    textSecondary: '#c3c2b7',
-    allowed: '#3987e5',
-    blocked: '#d03b3b',
-    accent: '#3987e5',
-    warning: '#fab219',
-    good: '#0ca30c',
-    serious: '#ec835a',
+    surface: '#1a1913',
+    plane: '#11100c',
+    grid: '#2a2820',
+    axis: '#4a473b',
+    muted: '#8f8a79',
+    textPrimary: '#ede8db',
+    textSecondary: '#bdb7a6',
+    allowed: '#3db8ae',
+    blocked: '#f2693f',
+    accent: '#3db8ae',
+    warning: '#e2a630',
+    good: '#3db8ae',
+    serious: '#e8833a',
   },
 } as const;
 

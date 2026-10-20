@@ -44,7 +44,7 @@ export function DashboardControls({
 
   return (
     <div className="mb-4 flex flex-wrap items-end gap-3">
-      <label className="flex flex-col gap-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+      <label className="label flex flex-col gap-1">
         Refresh
         <select
           className="control"
@@ -59,7 +59,7 @@ export function DashboardControls({
         </select>
       </label>
 
-      <label className="flex flex-col gap-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+      <label className="label flex flex-col gap-1">
         History
         <select
           className="control"
@@ -82,7 +82,7 @@ export function DashboardControls({
         Reset counters
       </button>
 
-      <div className="ml-auto text-[11px] tabular" style={{ color: 'var(--text-muted)' }}>
+      <div className="label tabular ml-auto">
         {message ? `${message} · ` : ''}
         {lastUpdated ? `Updated ${clockTime(lastUpdated)}` : 'Waiting for data…'}
       </div>

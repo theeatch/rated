@@ -59,7 +59,7 @@ export function TokenUtilizationPanel({ utilization }: { utilization: Utilizatio
 
       {topBuckets.length > 0 ? (
         <div className="mt-4">
-          <h3 className="mb-1 text-[11px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+          <h3 className="label mb-1" style={{ color: 'var(--text-secondary)' }}>
             Most drained buckets
           </h3>
           <table className="data-table tabular">

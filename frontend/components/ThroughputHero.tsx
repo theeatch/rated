@@ -37,9 +37,9 @@ export function ThroughputHero({
     <section className="card" aria-label="Current throughput">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="card-subtitle">Current throughput</p>
-          <p className="hero-value mt-1">{throughput.requestsPerSecond}</p>
-          <p className="mt-0.5 text-[12px]" style={{ color: 'var(--text-muted)' }}>
+          <p className="label">Current throughput</p>
+          <p className="hero-value mt-2">{throughput.requestsPerSecond}</p>
+          <p className="mt-1.5 text-[13px]" style={{ color: 'var(--text-muted)' }}>
             requests / second · {throughput.windowSeconds ?? 10}s average
           </p>
         </div>
@@ -51,7 +51,10 @@ export function ThroughputHero({
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
+      <div
+        className="mt-5 flex flex-wrap gap-x-8 gap-y-3 pt-3"
+        style={{ borderTop: '1px solid var(--border)' }}
+      >
         <Figure
           label="Allowed / s"
           value={String(throughput.allowedPerSecond)}
@@ -82,11 +85,9 @@ function Figure({
     <div>
       <div className="flex items-center gap-1.5">
         {markColor ? <span className="swatch" style={{ background: markColor }} aria-hidden /> : null}
-        <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
-          {label}
-        </span>
+        <span className="label">{label}</span>
       </div>
-      <div className="text-[18px] font-semibold" style={{ color: 'var(--text-primary)' }}>
+      <div className="tabular mt-0.5 text-[20px] font-medium" style={{ color: 'var(--text-primary)' }}>
         {value}
       </div>
     </div>

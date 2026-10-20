@@ -33,8 +33,8 @@ export function ThemeToggle() {
     <div
       role="group"
       aria-label="Color theme"
-      className="flex items-center gap-0.5 rounded-lg p-0.5"
-      style={{ border: '1px solid var(--border)' }}
+      className="flex items-center"
+      style={{ border: '1px solid var(--rule)' }}
     >
       {(['light', 'system', 'dark'] as Choice[]).map((option) => (
         <button
@@ -42,13 +42,10 @@ export function ThemeToggle() {
           type="button"
           onClick={() => apply(option)}
           aria-pressed={choice === option}
-          className="rounded-md px-2 py-0.5 text-[11px] capitalize transition-colors"
+          className="label px-2.5 py-1"
           style={{
-            color: choice === option ? 'var(--text-primary)' : 'var(--text-muted)',
-            background:
-              choice === option
-                ? 'color-mix(in oklab, var(--text-primary) 8%, transparent)'
-                : 'transparent',
+            color: choice === option ? 'var(--on-ink)' : 'var(--text-muted)',
+            background: choice === option ? 'var(--text-primary)' : 'transparent',
           }}
         >
           {option}

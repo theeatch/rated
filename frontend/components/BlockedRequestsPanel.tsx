@@ -17,7 +17,7 @@ import type { PolicyCounts } from '@/lib/types';
 
 /**
  * Blocked requests per policy — a single series, so no legend box: the title
- * says what is plotted. Bars are capped at 24px with a 4px rounded data-end.
+ * says what is plotted. Bars are capped at 24px with square ends.
  */
 export function BlockedRequestsPanel({ byPolicy }: { byPolicy: PolicyCounts[] }) {
   const colors = useChartColors();
@@ -68,7 +68,6 @@ export function BlockedRequestsPanel({ byPolicy }: { byPolicy: PolicyCounts[] })
               <Bar
                 dataKey="blocked"
                 name="Blocked"
-                radius={[4, 4, 0, 0]}
                 maxBarSize={24}
                 isAnimationActive={false}
               >
@@ -108,7 +107,7 @@ export function BlockedRequestsPanel({ byPolicy }: { byPolicy: PolicyCounts[] })
 function EmptyState() {
   return (
     <div
-      className="grid h-[200px] place-items-center rounded-lg text-[12px]"
+      className="grid h-[200px] place-items-center text-[12px]"
       style={{ border: '1px dashed var(--border)', color: 'var(--text-muted)' }}
     >
       Send traffic from the Playground to populate this chart.
@@ -129,8 +128,8 @@ function BlockedTooltip({
 
   return (
     <div
-      className="rounded-lg px-2.5 py-2 text-[11px]"
-      style={{ background: 'var(--surface-1)', border: '1px solid var(--border)' }}
+      className="px-2.5 py-2 text-[11px]"
+      style={{ background: 'var(--surface-1)', border: '1px solid var(--rule)' }}
     >
       <div className="mb-1 font-medium" style={{ color: 'var(--text-primary)' }}>
         {entry.policy}

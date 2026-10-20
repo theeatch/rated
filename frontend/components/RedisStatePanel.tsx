@@ -5,8 +5,11 @@ import { bytes, compact, duration } from '@/lib/format';
 import type { RedisState } from '@/lib/types';
 
 const Row = ({ label, value }: { label: string; value: string }) => (
-  <div className="flex items-baseline justify-between gap-3 py-1">
-    <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
+  <div
+    className="flex items-baseline justify-between gap-3 py-1.5"
+    style={{ borderBottom: '1px solid var(--border)' }}
+  >
+    <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
       {label}
     </span>
     <span className="tabular text-[12px]" style={{ color: 'var(--text-primary)' }}>
@@ -49,9 +52,10 @@ export function RedisStatePanel({
 
       {!redis.connected ? (
         <div
-          className="mb-3 rounded-lg px-3 py-2 text-[12px]"
+          className="mb-3 px-3 py-2 text-[12px]"
           style={{
             border: '1px solid var(--border)',
+            borderLeft: '4px solid var(--status-critical)',
             background: 'color-mix(in oklab, var(--status-critical) 8%, var(--surface-1))',
             color: 'var(--text-secondary)',
           }}

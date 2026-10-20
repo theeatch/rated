@@ -20,7 +20,8 @@ import type { SeriesPoint } from '@/lib/types';
  *
  * Both series are rates on one shared axis — never a second y-scale. They are
  * drawn from a common baseline rather than stacked so each can be read
- * directly, with blocked on top since it is usually the smaller series.
+ * directly, with blocked on top since it is usually the smaller series. Allowed
+ * carries a flat wash; blocked is a bare line so the two fills never blend.
  */
 export function ThroughputChart({ series }: { series: SeriesPoint[] }) {
   const colors = useChartColors();
@@ -39,7 +40,7 @@ export function ThroughputChart({ series }: { series: SeriesPoint[] }) {
 
         <div className="flex items-center gap-3">
           {/* Legend — always present for two or more series. */}
-          <div className="flex items-center gap-3 text-[11px]" style={{ color: 'var(--text-secondary)' }}>
+          <div className="flex items-center gap-3 text-[12px]" style={{ color: 'var(--text-secondary)' }}>
             <span className="flex items-center gap-1.5">
               <span className="swatch" style={{ background: colors.allowed }} aria-hidden />
               Allowed
@@ -90,19 +91,7 @@ export function ThroughputChart({ series }: { series: SeriesPoint[] }) {
       ) : (
         <div style={{ height: 260 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={series} margin={{ top: 12, right: 16, bottom: 0, left: -12 }}>
-              <defs>
-                {/* Area fill is a ~10% wash of the series hue, never a block. */}
-                <linearGradient id="fill-allowed" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={colors.allowed} stopOpacity={0.18} />
-                  <stop offset="100%" stopColor={colors.allowed} stopOpacity={0.02} />
-                </linearGradient>
-                <linearGradient id="fill-blocked" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={colors.blocked} stopOpacity={0.18} />
-                  <stop offset="100%" stopColor={colors.blocked} stopOpacity={0.02} />
-                </linearGradient>
-              </defs>
-
+            <AreaChart data={series} margin={{ top: 12, right: 28, bottom: 0, left: -12 }}>
               <CartesianGrid stroke={colors.grid} strokeWidth={1} vertical={false} />
 
               <XAxis
@@ -111,7 +100,7 @@ export function ThroughputChart({ series }: { series: SeriesPoint[] }) {
                 stroke={colors.axis}
                 tick={{ fill: colors.muted, fontSize: 11 }}
                 tickLine={false}
-                minTickGap={48}
+                minTickGap={56}
               />
               <YAxis
                 stroke={colors.axis}
@@ -129,22 +118,23 @@ export function ThroughputChart({ series }: { series: SeriesPoint[] }) {
               />
 
               <Area
-                type="monotone"
+                type="stepAfter"
                 dataKey="allowed"
                 name="Allowed"
                 stroke={colors.allowed}
                 strokeWidth={2}
-                fill="url(#fill-allowed)"
+                fill={colors.allowed}
+                fillOpacity={0.12}
                 isAnimationActive={false}
                 activeDot={{ r: 4, strokeWidth: 2, stroke: colors.surface }}
               />
               <Area
-                type="monotone"
+                type="stepAfter"
                 dataKey="blocked"
                 name="Blocked"
                 stroke={colors.blocked}
                 strokeWidth={2}
-                fill="url(#fill-blocked)"
+                fill="none"
                 isAnimationActive={false}
                 activeDot={{ r: 4, strokeWidth: 2, stroke: colors.surface }}
               />
@@ -154,8 +144,8 @@ export function ThroughputChart({ series }: { series: SeriesPoint[] }) {
       )}
 
       <footer
-        className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px] tabular"
-        style={{ color: 'var(--text-muted)' }}
+        className="tabular mt-2 flex flex-wrap gap-x-5 gap-y-1 pt-2 text-[11px]"
+        style={{ color: 'var(--text-muted)', borderTop: '1px solid var(--border)' }}
       >
         <span>Now {latest ? latest.total : 0} req/s</span>
         <span>Peak {peak} req/s</span>
@@ -184,10 +174,10 @@ function ThroughputTooltip({ active, payload, allowedColor, blockedColor }: Tool
 
   return (
     <div
-      className="rounded-lg px-2.5 py-2 text-[11px] shadow-sm"
-      style={{ background: 'var(--surface-1)', border: '1px solid var(--border)' }}
+      className="px-2.5 py-2 text-[11px]"
+      style={{ background: 'var(--surface-1)', border: '1px solid var(--rule)' }}
     >
-      <div className="mb-1 font-medium" style={{ color: 'var(--text-primary)' }}>
+      <div className="tabular mb-1 font-medium" style={{ color: 'var(--text-primary)' }}>
         {clockTime(point.timestamp)}
       </div>
       {rows.map((row) => (

@@ -17,25 +17,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen">
       <header
-        className="sticky top-0 z-10 border-b backdrop-blur"
-        style={{
-          borderColor: 'var(--border)',
-          background: 'color-mix(in oklab, var(--plane) 88%, transparent)',
-        }}
+        className="sticky top-0 z-10 border-b-2"
+        style={{ borderColor: 'var(--rule)', background: 'var(--plane)' }}
       >
-        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-4 px-5 py-3">
-          <Link href="/" className="flex items-center gap-2">
+        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-6 px-5 py-3">
+          <Link href="/" className="flex items-center gap-2.5">
             <span
-              className="grid h-7 w-7 place-items-center rounded-md text-[13px] font-bold text-white"
-              style={{ background: 'var(--series-allowed)' }}
+              className="tabular grid h-7 w-7 place-items-center text-[14px] font-bold"
+              style={{ background: 'var(--text-primary)', color: 'var(--on-ink)' }}
               aria-hidden
             >
               R
             </span>
-            <span className="text-[15px] font-semibold tracking-tight">RateFlow</span>
+            <span className="text-[17px] font-bold tracking-tight">RateFlow</span>
           </Link>
 
-          <nav className="flex items-center gap-1" aria-label="Sections">
+          <nav className="flex items-center gap-5" aria-label="Sections">
             {NAV.map((item) => {
               const active = pathname === item.href;
               return (
@@ -43,12 +40,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   key={item.href}
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
-                  className="rounded-md px-2.5 py-1 text-[13px] transition-colors"
+                  className="border-b-2 py-1 text-[14px] font-medium"
                   style={{
                     color: active ? 'var(--text-primary)' : 'var(--text-muted)',
-                    background: active
-                      ? 'color-mix(in oklab, var(--text-primary) 7%, transparent)'
-                      : 'transparent',
+                    borderColor: active ? 'var(--accent)' : 'transparent',
                   }}
                 >
                   {item.label}
@@ -65,10 +60,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <main className="mx-auto max-w-[1400px] px-5 py-6">{children}</main>
 
-      <footer
-        className="mx-auto max-w-[1400px] px-5 pb-8 pt-2 text-[11px]"
-        style={{ color: 'var(--text-muted)' }}
-      >
+      <footer className="label mx-auto max-w-[1400px] px-5 pb-8 pt-2">
         RateFlow — distributed token-bucket rate limiting on Redis.
       </footer>
     </div>

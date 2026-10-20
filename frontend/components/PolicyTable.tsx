@@ -92,11 +92,17 @@ export function PolicyTable({ policies, onChange }: { policies: Policy[]; onChan
                   <td>
                     <span style={{ color: 'var(--text-primary)' }}>{policy.name}</span>
                     {policy.overridden ? (
-                      <span className="ml-1.5 text-[10px]" style={{ color: 'var(--status-warning)' }}>
+                      <span
+                        className="label ml-2 px-1 py-px"
+                        style={{ border: '1px solid var(--status-warning)', color: 'var(--text-secondary)' }}
+                      >
                         override
                       </span>
                     ) : null}
-                    <div className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                    <div
+                      className="mt-0.5 text-[12px]"
+                      style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-sans)' }}
+                    >
                       {policy.description}
                     </div>
                   </td>
