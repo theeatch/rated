@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import { LoadingScreen } from '@/components/LoadingScreen';
 import { PolicyTable } from '@/components/PolicyTable';
 import { TokenUtilizationPanel } from '@/components/TokenUtilizationPanel';
 import { fetchPolicies, fetchSummary } from '@/lib/api';
@@ -29,6 +30,9 @@ export default function PoliciesPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Neither a result nor an error yet: the first request is still in flight.
+  if (!summary && !error) return <LoadingScreen />;
 
   return (
     <>

@@ -279,6 +279,29 @@ body {
     transition: width 300ms ease;
   }
 
+  /* Loading screen. Each cell fills and drains on a 6s loop, offset from its
+     neighbour so the row reads as a slow wave. Fill/drain edges are ~0.4s;
+     the rest is hold time. */
+  .bucket {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 4px;
+  }
+
+  .bucket-cell {
+    animation: bucket-cell 6s ease-in-out infinite;
+    border: 1px solid var(--rule);
+    height: 28px;
+  }
+
+  .caret {
+    animation: caret-blink 1.4s steps(1) infinite;
+    background: var(--accent);
+    display: inline-block;
+    height: 12px;
+    width: 7px;
+  }
+
   .data-table {
     font-size: 0.75rem;
     width: 100%;
@@ -306,6 +329,44 @@ body {
 
   .data-table tr:last-child td {
     border-bottom: none;
+  }
+}
+
+@keyframes bucket-cell {
+  0%,
+  8% {
+    background-color: transparent;
+  }
+  14%,
+  58% {
+    background-color: var(--accent);
+  }
+  66%,
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes caret-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* No motion: freeze the bucket half full and keep the caret solid. */
+@media (prefers-reduced-motion: reduce) {
+  .bucket-cell,
+  .caret {
+    animation: none;
+  }
+
+  .bucket-cell:nth-child(-n + 6) {
+    background-color: var(--accent);
   }
 }
 

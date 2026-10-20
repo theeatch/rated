@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { BlockedRequestsPanel } from '@/components/BlockedRequestsPanel';
 import { DashboardControls } from '@/components/DashboardControls';
+import { LoadingScreen } from '@/components/LoadingScreen';
 import { RedisStatePanel } from '@/components/RedisStatePanel';
 import { RequestFeed } from '@/components/RequestFeed';
 import { StatTile } from '@/components/StatTile';
@@ -22,9 +23,7 @@ export default function OverviewPage() {
 
   const { data, error, loading, lastUpdated, refresh } = useMetrics(windowSeconds, pollMs);
 
-  if (loading && !data) {
-    return <p style={{ color: 'var(--text-muted)' }}>Loading metrics…</p>;
-  }
+  if (loading && !data) return <LoadingScreen />;
 
   if (error && !data) {
     return (

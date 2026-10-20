@@ -6,6 +6,12 @@ import { fetchSummary } from './api';
 import { POLL_INTERVAL_MS } from './config';
 import type { MetricsSummary } from './types';
 
+/**
+ * A request still pending after this long is treated as hung and replaced by
+ * the next poll. Anything younger is left alone so a slow backend can finish.
+ */
+const STALE_REQUEST_MS = 30_000;
+
 interface UseMetricsResult {
   data: MetricsSummary | null;
   error: string | null;
@@ -21,8 +27,11 @@ interface UseMetricsResult {
  * forgotten background tab does not burn through the Redis command budget.
  *
  * Keeps the previous snapshot on screen while a refresh is in flight so the
- * dashboard never flashes empty, and aborts the outstanding request when the
- * interval or window changes.
+ * dashboard never flashes empty. A poll tick that lands while a request is
+ * still pending is skipped rather than restarting it — otherwise a backend
+ * slower than the interval would have every request cancelled by the next
+ * one and the first load would never complete. The outstanding request is
+ * aborted when the interval or window changes.
  */
 export const useMetrics = (
   windowSeconds: number,
@@ -32,12 +41,15 @@ export const useMetrics = (
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
-  const controllerRef = useRef<AbortController | null>(null);
+  const inFlightRef = useRef<{ controller: AbortController; startedAt: number } | null>(null);
 
   const load = useCallback(async () => {
-    controllerRef.current?.abort();
+    const pending = inFlightRef.current;
+    if (pending && Date.now() - pending.startedAt < STALE_REQUEST_MS) return;
+    pending?.controller.abort();
+
     const controller = new AbortController();
-    controllerRef.current = controller;
+    inFlightRef.current = { controller, startedAt: Date.now() };
 
     try {
       const summary = await fetchSummary(windowSeconds, controller.signal);
@@ -48,6 +60,7 @@ export const useMetrics = (
       if (controller.signal.aborted) return;
       setError(caught instanceof Error ? caught.message : 'Failed to load metrics');
     } finally {
+      if (inFlightRef.current?.controller === controller) inFlightRef.current = null;
       if (!controller.signal.aborted) setLoading(false);
     }
   }, [windowSeconds]);
@@ -66,7 +79,8 @@ export const useMetrics = (
     return () => {
       clearInterval(timer);
       document.removeEventListener('visibilitychange', onVisible);
-      controllerRef.current?.abort();
+      inFlightRef.current?.controller.abort();
+      inFlightRef.current = null;
     };
   }, [load, intervalMs]);
 
